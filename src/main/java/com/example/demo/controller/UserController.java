@@ -1,15 +1,15 @@
 package com.example.demo.controller;
 
 
+import com.example.demo.dto.LoginRequest;
 import com.example.demo.dto.MessageResponse;
 import com.example.demo.dto.UserDto;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.UserService;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +26,8 @@ public class UserController {
     public UserController(final UserService userService) {
         this.userService = userService;
     }
-
+    @Autowired
+    UserRepository userRepository;
     @GetMapping
     public ResponseEntity<?> getAllUsers() {
 //        List<UserDto> dtoList;
@@ -77,5 +78,25 @@ public class UserController {
         userService.delete(userName);
         return ResponseEntity.noContent().build();
     }
+
+
+    @PostMapping("/signup")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody UserDto userDto) {
+        if (userRepository.existsByUsername(userDto.getUsername())) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+        }
+
+        if (userRepository.existsByEmail(userDto.getEmail())) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+        }
+        userDto.setRoles(Collections.singleton("ROLE_USER"));
+        try {
+            userService.create(userDto);
+        }catch (Exception e){
+            return ResponseEntity.badRequest().body(new MessageResponse("one of role01s not found"));
+        }
+        return ResponseEntity.ok(new MessageResponse("User01 registered successfully!"));
+    }
+
 
 }
